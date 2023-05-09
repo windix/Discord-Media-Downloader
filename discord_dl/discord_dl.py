@@ -2,8 +2,8 @@ import os
 import time
 
 import requests
-from src.logger import logger
-from src.utils import (
+from logger import logger
+from utils import (
     convert_discord_timestamp,
     create_filepath,
     create_format_variables,
@@ -193,6 +193,13 @@ class DiscordDownloader:
         headers = {"Authorization": self.token}
         session = requests.Session()
         session.headers.update(headers)
+
+        user_me = session.get(f"https://discord.com/api/v9/users/@me").json()
+
+        if user_me == {"message": "401: Unauthorized", "code": 0}:
+            logger.error(f"401 Unauthorized, bad token: {self.token}")
+            return
+
         for channel_id in self.channel_ids:
             channel_messages = self.get_all_messages(session, channel_id)
             channel_variables = self.get_channel_info(session, channel_id)
