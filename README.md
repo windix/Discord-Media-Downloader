@@ -12,7 +12,7 @@ To get started, you will need to find your Discord Auth token. ***DO NOT*** shar
 python discord_dl --token TOKEN [OPTIONS] channel_id [channel_id ...]
 ```
 
-## Options
+## ~~Options~~ Needs Updating...
 
     --token                 Your Discord Auth token, DO NOT SHARE IT
     --verbose               Set logging level to DEBUG
