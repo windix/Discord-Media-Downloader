@@ -28,6 +28,7 @@ class DiscordDownloader:
         self.date_after = options.get("date_after", None)
         self.username = options.get("username", [])
         self.user_id = options.get("user_id", [])
+        self.discord_api = "https://discord.com/api/v9"
         self.channel_format = options.get(
             "channel_format", "downloads/{date:%Y-%m-%d}_{id}_{filename}.{ext}"
         )
@@ -41,20 +42,43 @@ class DiscordDownloader:
         if self.token == None:
             raise (f"No discord auth token passed")
 
-        for key, value in options.items():
-            if key == "token":
-                logger.debug(f"{key}: '**********'")
-            else:
-                logger.debug(f"{key}: {value}")
+        if os.path.isabs(self.channel_format):
+            raise (
+                f"Channel format should not be an absolute filepath: {self.channel_format}"
+            )
+
+        if os.path.isabs(self.dm_format):
+            raise (f"DM format should not be an absolute filepath: {self.dm_format}")
 
         if not os.path.exists(self.path):
             raise (f"Download path does not exist: {self.path}")
 
         self.channel_ids = extract_channel_ids(self.channel_ids)
 
-    def get_server_info(self, session, guild_id: str) -> dict:
+        headers = {"Authorization": self.token}
+        self.session = requests.Session()
+        self.session.headers.update(headers)
+
+        # check if token is valid
+        user_me = self.session.get(f"{self.discord_api}/users/@me").json()
+
+        if user_me == {"message": "401: Unauthorized", "code": 0}:
+            logger.error(f"401 Unauthorized | Invalid Token")
+            raise (f"401 Unauthorized | Invalid Token")
+
+        for key, value in self.__dict__.items():
+            # do not print session object
+            if key == "session":
+                continue
+            # DO NOT PRINT TOKEN!
+            elif key == "token":
+                logger.debug(f"{key}: Valid Token")
+            else:
+                logger.debug(f"{key}: {value}")
+
+    def get_server_info(self, guild_id: str) -> dict:
         logger.info(f"Getting server info for server id {guild_id}")
-        response = session.get(f"https://discord.com/api/v9/guilds/{guild_id}").json()
+        response = self.session.get(f"{self.discord_api}/guilds/{guild_id}").json()
         server_info = {
             "server_id": response["id"],
             "server_name": response["name"],
@@ -62,26 +86,24 @@ class DiscordDownloader:
         }
         return server_info
 
-    def get_channel_info(self, session, channel_id: str) -> dict:
+    def get_channel_info(self, channel_id: str) -> dict:
         logger.info(f"Getting channel info for channel id {channel_id}")
-        response = session.get(
-            f"https://discord.com/api/v9/channels/{channel_id}"
-        ).json()
+        response = self.session.get(f"{self.discord_api}/channels/{channel_id}").json()
         channel_info = {"channel_id": response["id"]}
         # server channel
         if "guild_id" in response:
             channel_info["channel_name"] = response["name"]
             channel_info["channel_topic"] = response["topic"]
-            server_info = self.get_server_info(session, response["guild_id"])
+            server_info = self.get_server_info(response["guild_id"])
             channel_info = {**channel_info, **server_info}
         return channel_info
 
-    def get_all_messages(self, session, channel_id: str) -> list:
+    def get_all_messages(self, channel_id: str) -> list:
         messages = []
         last_message_id = None
         while True:
             messages_chunk = self.retrieve_messages(
-                session, channel_id, before_message_id=last_message_id
+                channel_id, before_message_id=last_message_id
             )
             messages += messages_chunk
             last_message_id = messages_chunk[-1]["id"]
@@ -97,9 +119,7 @@ class DiscordDownloader:
                 return self.find_messages(messages)
             mysleep(self.sleep, self.sleep_random)
 
-    def retrieve_messages(
-        self, session, channel_id: str, before_message_id: str = None
-    ) -> list:
+    def retrieve_messages(self, channel_id: str, before_message_id: str = None) -> list:
         params = {"limit": 50}
         if before_message_id:
             logger.info(
@@ -111,8 +131,8 @@ class DiscordDownloader:
         retries = 0
         while retries < self.max_retries:
             try:
-                messages = session.get(
-                    f"https://discord.com/api/v9/channels/{channel_id}/messages",
+                messages = self.session.get(
+                    f"{self.discord_api}/channels/{channel_id}/messages",
                     params=params,
                 ).json()
             except ConnectionError:
@@ -189,20 +209,11 @@ class DiscordDownloader:
             else:
                 break
 
-    def run(self):
-        headers = {"Authorization": self.token}
-        session = requests.Session()
-        session.headers.update(headers)
-
-        user_me = session.get(f"https://discord.com/api/v9/users/@me").json()
-
-        if user_me == {"message": "401: Unauthorized", "code": 0}:
-            logger.error(f"401 Unauthorized, bad token: {self.token}")
-            return
-
+    def download(self):
+        # direct messages and channels are functionally the same
         for channel_id in self.channel_ids:
-            channel_messages = self.get_all_messages(session, channel_id)
-            channel_variables = self.get_channel_info(session, channel_id)
+            channel_messages = self.get_all_messages(channel_id)
+            channel_variables = self.get_channel_info(channel_id)
             for message in channel_messages:
                 for attachment in message["attachments"]:
                     if "https://cdn.discordapp.com" == attachment["url"][:27]:
@@ -216,4 +227,11 @@ class DiscordDownloader:
                     }
                     logger.debug(f"Format variables: {variables}")
                     self.download_attachment(attachment, variables)
+                    # do not sleep after last download...
+                    if (
+                        channel_id == self.channel_ids[-1]
+                        and message == channel_messages[-1]
+                        and attachment == message["attachments"][-1]
+                    ):
+                        continue
                     mysleep(self.sleep, self.sleep_random)
