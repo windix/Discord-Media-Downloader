@@ -2,15 +2,10 @@ import os
 import time
 
 import requests
+from downloader import download_file
+from filenaming import create_filepath, create_format_variables
 from logger import logger
-from utils import (
-    convert_discord_timestamp,
-    create_filepath,
-    create_format_variables,
-    download,
-    extract_channel_ids,
-    mysleep,
-)
+from utils import convert_discord_timestamp, extract_channel_ids, mysleep
 
 
 class DiscordDownloader:
@@ -38,6 +33,8 @@ class DiscordDownloader:
         self.windows_filenames = options.get("windows_filenames", False)
         self.restrict_filenames = options.get("restrict_filenames", False)
         self.simulate = options.get("simulate", False)
+        self.temp_file = options.get("temp", True)
+        self.resume_download = options.get("resume", True)
 
         if self.token == None:
             raise (f"No discord auth token passed")
@@ -192,22 +189,35 @@ class DiscordDownloader:
         )
         retries = 0
         while retries < self.max_retries:
-            result = download(attachment["url"], filepath, self.simulate)
-            if result == 1:
-                logger.info("File already downloaded with matching hash and file name")
-                break
+            result, reason = download_file(
+                self.session,
+                attachment["url"],
+                filepath,
+                self.temp_file,
+                self.resume_download,
+                self.simulate,
+            )
+            if result == 200:
+                return
+            elif result == 1:
+                logger.info(reason)
+                return
             elif result == 404:
-                logger.warning(f"{result} Failed to download url: {attachment['url']}")
-                break
-            elif result != 200:
+                logger.warning(
+                    f"{result} {reason} Failed to download url: {attachment['url']}"
+                )
+                return
+            else:
                 retries += 1
                 sleep = 30 * retries
-                logger.warning(f"{result} Failed to download url: {attachment['url']}")
-                logger.info(f"Sleeping for {sleep} seconds")
+                logger.warning(
+                    f"{result} {reason} Failed to download attachment. Retrying ({retries}/{self.max_retries}) in {sleep} seconds."
+                )
                 time.sleep(sleep)
-                logger.info(f"Retrying download {retries}/{self.max_retries}")
-            else:
-                break
+
+        logger.error(
+            f"All {self.max_retries} retries failed to download url: {attachment['url']}"
+        )
 
     def download(self):
         # direct messages and channels are functionally the same
