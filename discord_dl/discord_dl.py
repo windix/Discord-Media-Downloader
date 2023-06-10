@@ -52,7 +52,10 @@ class DiscordDownloader:
 
         self.channel_ids = extract_channel_ids(self.channel_ids)
 
-        headers = {"Authorization": self.token}
+        headers = {
+            "Authorization": self.token,
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36",
+        }
         self.session = requests.Session()
         self.session.headers.update(headers)
 
