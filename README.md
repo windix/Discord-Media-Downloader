@@ -2,9 +2,13 @@
 
 A python script that downloads media attachments from Discord server channels and direct messages.
 
+# Disclaimer
+
+Selfbots are against discords [ToS](https://discord.com/terms) and your account may be banned from using this application. You use this application at your own risk. I will not be held responsible for using this application.
+
 ## Getting Started
 
-To get started, you will need to find your Discord Auth token. ***DO NOT*** share this token with anyone! ***DO NOT*** include your token when making a bug report! Anyone with this token can access your account.
+To get started, you will need to find your Discord Auth token. **_DO NOT_** share this token with anyone! **_DO NOT_** include your token when making a bug report! Anyone with this token can access your account.
 
 ## Usage
 
@@ -33,21 +37,24 @@ python discord_dl --token TOKEN [OPTIONS] channel_id [channel_id ...]
     --date-before           Only download attachments from messages posted before this date.
     --date-after            Only download attachments from messages posted after this date.
 
-### Allowed Channel IDs 
+### Allowed Channel IDs
 
 `CHANEL_ID` will be a string of only numbers.
 
 ID based:
+
 ```bash
 "CHANNEL_ID"
 ```
 
 URL based (server channel):
+
 ```bash
 "https://discord.com/channels/SERVER_ID/CHANNEL_ID"
 ```
 
 URL based (direct message):
+
 ```bash
 "https://discord.com/channels/@me/CHANNEL_ID"
 ```
@@ -56,32 +63,36 @@ URL based (direct message):
 
 ### General Options
 
-- `{id}`                The attachment id
-- `{filename}`          The attachment file name
-- `{ext}`               The attachment file extension
-- `{date}`              The message post date. [strftime()-style formatting options](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) are supported.
-- `{channel_id}`        The channel id
-- `{username}`          The username of the message author
-- `{user_id}`           The id of the message author
+- `{id}` The attachment id
+- `{filename}` The attachment file name
+- `{ext}` The attachment file extension
+- `{date}` The message post date. [strftime()-style formatting options](https://docs.python.org/3/library/datetime.html#strftime-and-strptime-format-codes) are supported.
+- `{channel_id}` The channel id
+- `{username}` The username of the message author
+- `{user_id}` The id of the message author
 
 ### Sever Channel Specific Options
 
-- `{channel_name}`      The name of the channel
-- `{channel_topic}`     The channel topic
-- `{server_id}`         The server id
-- `{server_name}`       The server name
-- `{server_owner_id}`   The id of th owner of the server
+- `{channel_name}` The name of the channel
+- `{channel_topic}` The channel topic
+- `{server_id}` The server id
+- `{server_name}` The server name
+- `{server_owner_id}` The id of th owner of the server
 
-###  Defaults
+### Defaults
+
 ```bash
 --path "CURRENT_WORKING_DIRECTORY/downloads"
 ```
-```bash    
+
+```bash
 --channel-format "{date:%Y-%m-%d}_{id}_{filename}.{ext}"
 ```
+
 ```bash
 --dm-format "{date:%Y-%m-%d}_{id}_{filename}.{ext}"
 ```
+
 ## Examples
 
 To download all attachments from a single channel, run the following command:
