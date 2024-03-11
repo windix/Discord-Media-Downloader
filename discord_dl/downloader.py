@@ -1,28 +1,9 @@
 import os
 import time
-import pathlib
 
 import requests
 from logger import logger
 from utils import calculate_md5
-
-def truncate_filename(filename):
-    MAX_FILENAME_LENGTH = 200
-
-    length = len(filename)
-
-    if length >= MAX_FILENAME_LENGTH:
-        ext_name = pathlib.Path(filename).suffix
-        before_ext_name = filename[:(length - len(ext_name))]
-
-        if ext_name == '':
-            new_filename = before_ext_name[:MAX_FILENAME_LENGTH]
-        else:
-            new_filename = before_ext_name[:(MAX_FILENAME_LENGTH - len(ext_name))] + ext_name
-
-        return new_filename
-    else:
-        return filename
 
 # def download_file(
 #     session: requests.Session, url: str, filepath: str, simulate=False
