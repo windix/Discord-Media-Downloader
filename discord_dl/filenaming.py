@@ -16,6 +16,23 @@ def create_format_variables(message: dict, attachment: dict, index: int = 0) -> 
     }
     return variables
 
+def truncate_filename(filename):
+    MAX_FILENAME_LENGTH = 200
+
+    length = len(filename)
+
+    if length >= MAX_FILENAME_LENGTH:
+        ext_name = pathlib.Path(filename).suffix
+        before_ext_name = filename[:(length - len(ext_name))]
+
+        if ext_name == '':
+            new_filename = before_ext_name[:MAX_FILENAME_LENGTH]
+        else:
+            new_filename = before_ext_name[:(MAX_FILENAME_LENGTH - len(ext_name))] + ext_name
+
+        return new_filename
+    else:
+        return filename
 
 def create_filepath(
     variables: dict,
@@ -50,8 +67,10 @@ def create_filepath(
         format_template = head
     components.insert(0, path)
     filepath = os.path.join(*components)
-    return filepath
 
+    file_path, filename = os.path.split(filepath)
+
+    return file_path + os.path.sep + truncate_filename(filename)
 
 def sanitize_filename(string, windows_naming, restrict_filenames):
     string = re.sub(r"[/]", "_", string)

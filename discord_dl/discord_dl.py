@@ -34,7 +34,7 @@ class DiscordDownloader:
         self.restrict_filenames = options.get("restrict_filenames", False)
         self.simulate = options.get("simulate", False)
         self.temp_file = options.get("temp", True)
-        self.resume_download = options.get("resume", True)
+        self.resume_download = options.get("resume", False)
 
         if self.token == None:
             raise (f"No discord auth token passed")

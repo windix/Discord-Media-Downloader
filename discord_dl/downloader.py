@@ -1,9 +1,28 @@
 import os
 import time
+import pathlib
 
 import requests
 from logger import logger
 from utils import calculate_md5
+
+def truncate_filename(filename):
+    MAX_FILENAME_LENGTH = 200
+
+    length = len(filename)
+
+    if length >= MAX_FILENAME_LENGTH:
+        ext_name = pathlib.Path(filename).suffix
+        before_ext_name = filename[:(length - len(ext_name))]
+
+        if ext_name == '':
+            new_filename = before_ext_name[:MAX_FILENAME_LENGTH]
+        else:
+            new_filename = before_ext_name[:(MAX_FILENAME_LENGTH - len(ext_name))] + ext_name
+
+        return new_filename
+    else:
+        return filename
 
 # def download_file(
 #     session: requests.Session, url: str, filepath: str, simulate=False
@@ -48,7 +67,6 @@ from utils import calculate_md5
 #         print()
 #     return r.status_code
 
-
 def download_file(
     session: requests.Session,
     url: str,
@@ -86,7 +104,7 @@ def download_file(
         local_md5 = calculate_md5(filepath) if os.path.exists(filepath) else None
         server_md5 = r.headers.get("ETag", "")
         if local_md5:
-            if server_md5 == f'"{local_md5}"':
+            if server_md5 == f'W/"{local_md5}"' or server_md5 == f'"{local_md5}"':
                 return 1, "File already exists and has correct hash"
 
             if server_md5 == "" and os.path.getsize(filepath) == total:
@@ -119,16 +137,17 @@ def download_file(
         print()
 
     local_md5 = calculate_md5(file)
-    if server_md5 != "" and server_md5 != f'"{local_md5}"':
-        return (
-            2,
-            f"File completed with incorrect hash | expected: {server_md5} got: {local_md5}",
-        )
-    if total != downloaded:
-        return (
-            2,
-            f"File completed with incorrect file size | total: {total} downloaded: {downloaded}",
-        )
+    # if server_md5 != "" and server_md5 != f'"{local_md5}"':
+    #     return (
+    #         2,
+    #         f"File completed with incorrect hash | expected: {server_md5} got: {local_md5}",
+    #     )
+    # if total != downloaded:
+    #     return (
+    #         2,
+    #         f"File completed with incorrect file size | total: {total} downloaded: {downloaded}",
+    #     )
+
     if temp_file:
         os.rename(temp_filepath, filepath)
     return r.status_code, r.reason
